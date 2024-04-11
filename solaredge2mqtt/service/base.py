@@ -12,6 +12,9 @@ from solaredge2mqtt.service.modbus import Modbus
 from solaredge2mqtt.service.wallbox import WallboxClient
 from solaredge2mqtt.settings import ServiceSettings
 
+import json
+
+
 
 class BaseLoops:
     def __init__(
@@ -79,6 +82,21 @@ class BaseLoops:
         )
 
         await self.mqtt.publish_to(inverter_data.mqtt_topic, inverter_data)
+        inverter_data_config = {
+            #"name": None,
+            "name": "SolarEdge TEST inverter energytotal",
+            "object_id": "solaredgeTESTinverter123",
+            "state_topic": "solaredgeTEST/" + inverter_data.mqtt_topic,
+            "value_template": "{{ value_json.energytotal }}",
+            "unique_id": "inverter123",
+            "availability_topic": "solaredgeTEST/status",
+            "unit_of_measurement": "Wh",
+            "expire_after": 60,
+            "json_attributes_topic": "solaredgeTEST/" + inverter_data.mqtt_topic,
+
+        }
+        logger.debug(inverter_data_config)
+        await self.mqtt.publish("homeassistant/sensor/" + inverter_data.mqtt_topic + "/config", json.dumps(inverter_data_config), qos=1, retain=False)
         for key, component in {**meters_data, **batteries_data}.items():
             await self.mqtt.publish_to(
                 f"{component.mqtt_topic}/{key.lower()}", component
